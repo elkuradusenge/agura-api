@@ -302,6 +302,10 @@ class NotificationRead(BaseModel):
     type: str
     title_translation_key: str
     body_translation_key: str
+    # Resolved from the admin editable message templates, in the farmer's
+    # language. The keys stay for clients that ship their own copy.
+    title: str | None = None
+    body: str | None = None
     params: dict[str, Any] = {}
     task_instance_id: uuid.UUID | None = None
     sms_sent: bool

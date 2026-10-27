@@ -15,6 +15,7 @@ from app.core.pagination import Page, PageParamsDep, build_page
 from app.models.analysis import ProvinceFoodSummary
 from app.models.enums import (
     FundingStatus,
+    Language,
     NotificationType,
     PlantingStatus,
     ProductStatus,
@@ -56,6 +57,7 @@ from app.schemas.farming import (
     TodayResponse,
 )
 from app.services import analysis_queries, product_service, settings_service
+from app.sms import templates
 from app.ws import broadcaster
 
 router = APIRouter(tags=["farmer"])
@@ -450,6 +452,17 @@ def skip_task(
 # Notifications
 
 
+def _notification_read(db, notification: Notification, language: Language) -> NotificationRead:
+    """Attach the resolved title and body so the app shows the edited copy."""
+    payload = NotificationRead.model_validate(notification)
+    params = notification.params or {}
+    title_key = notification.title_translation_key.rsplit(".", 1)[0]
+    body_key = notification.body_translation_key.rsplit(".", 1)[0]
+    payload.title = templates.title_for(title_key, language.value)
+    payload.body = templates.body_for(db, body_key, language.value, params)
+    return payload
+
+
 @NOTIFICATIONS.get("", response_model=Page[NotificationRead], summary="My notifications")
 def list_notifications(
     params: PageParamsDep,
@@ -467,7 +480,7 @@ def list_notifications(
     rows = db.scalars(
         query.order_by(Notification.created_at.desc()).offset(params.offset).limit(params.page_size)
     )
-    return build_page([NotificationRead.model_validate(row) for row in rows], total, params)
+    return build_page([_notification_read(db, row, user.language) for row in rows], total, params)
 
 
 @NOTIFICATIONS.get("/unread-count", summary="Unread badge count")
@@ -491,7 +504,7 @@ def mark_read(notification_id: uuid.UUID, db: DbSession, user: CurrentUser) -> N
     if notification.read_at is None:
         notification.read_at = datetime.now(UTC)
         db.commit()
-    return NotificationRead.model_validate(notification)
+    return _notification_read(db, notification, user.language)
 
 
 # Harvests

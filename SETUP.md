@@ -68,6 +68,23 @@ python scripts/check_no_em_dash.py
 `pytest` includes `tests/test_no_em_dash.py`, which fails the build when the em dash
 character appears anywhere in the source tree, as required by the product rules.
 
+## Seeding
+
+```bash
+python -m scripts.seed              # settings, food items, message templates, draft product, admin
+python -m scripts.seed_demo_product # one complete, trackable demo product
+```
+
+The real Oyster mushroom product is always created as a **draft** with empty benefits
+and nutrient values, because health statements need RAB review. It never becomes
+trackable on its own.
+
+`seed_demo_product` adds a second product, "Demo: Orange-fleshed sweet potato", and
+publishes it through the same `product_service.mark_trackable` rule the console uses.
+Every health statement in it says "Demo placeholder, replace before any farmer sees
+it", and the reviewer is "Demo seed". It exists so the farmer flow can be walked
+locally: plant it, get reminders, record a harvest. Do not ship it.
+
 ## M2 data pipeline
 
 `POST /api/v1/admin/surveys/upload` streams the `.dta` file to a private folder,
@@ -172,6 +189,23 @@ stays visible.
 - Consistent error envelope: `{"error": {"code", "translation_key", "message", "details"}}`
 - Roles: `super_admin`, `content_editor`, `data_analyst`, `support_agent`, with a
   permission check on every administrator route
+
+## Notification text
+
+`GET /notifications` returns both the translation keys and the resolved `title` and
+`body`. The body is rendered from the admin editable `message_templates` row in the
+farmer's language, so an administrator editing copy sees it in the app without a
+client release. Titles are short fixed labels held in `app/sms/templates.py`.
+
+A non English template that has not had human review carries a trailing
+`[TODO: human review of ...]` marker, so an unreviewed translation is visible in the
+product rather than pretending to be finished.
+
+## Administrator identity
+
+`GET /auth/admin/me` returns the signed in administrator with their permission list.
+The console needs it after a page reload, because permissions otherwise only arrive
+once, on the login response, and permission gated navigation would disappear.
 
 ## Replit notes
 

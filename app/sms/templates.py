@@ -61,6 +61,55 @@ DRAFT_SUFFIX = {
 }
 
 
+# Notification titles are short labels, not editable copy, so they live here
+# rather than in the database.
+DEFAULT_TITLES: dict[str, dict[Language, str]] = {
+    "task.reminder.morning": {
+        Language.EN: "Morning task",
+        Language.RW: "Umurimo w'igitondo",
+        Language.FR: "Tache du matin",
+    },
+    "task.reminder.evening": {
+        Language.EN: "Evening task",
+        Language.RW: "Umurimo w'ikigoroba",
+        Language.FR: "Tache du soir",
+    },
+    "task.missed": {
+        Language.EN: "You missed a task",
+        Language.RW: "Watsinzwe umurimo",
+        Language.FR: "Tache manquee",
+    },
+    "product.published": {
+        Language.EN: "New crop available",
+        Language.RW: "Igihingwa gishya kibonetse",
+        Language.FR: "Nouvelle culture disponible",
+    },
+    "analysis.updated": {
+        Language.EN: "Province figures updated",
+        Language.RW: "Imibare y'intara yavuguruwe",
+        Language.FR: "Chiffres de la province actualises",
+    },
+    "specialist.request.updated": {
+        Language.EN: "Specialist request update",
+        Language.RW: "Ubutumwa ku busabe bw'umuhanga",
+        Language.FR: "Suivi de la demande",
+    },
+    "funding.interest.updated": {
+        Language.EN: "Funding request update",
+        Language.RW: "Ubutumwa ku busabe bw'inkunga",
+        Language.FR: "Suivi du financement",
+    },
+}
+
+
+def title_for(key: str, language: str) -> str | None:
+    """The short title for a notification, in the asked language."""
+    titles = DEFAULT_TITLES.get(key)
+    if titles is None:
+        return None
+    return titles.get(Language(language)) or titles[Language.EN]
+
+
 def render(template: str, params: dict[str, Any]) -> str:
     """Fill {placeholders}. Unknown placeholders are left alone, never crash a send."""
     rendered = template

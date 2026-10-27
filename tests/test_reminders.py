@@ -9,6 +9,7 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.models.enums import (
+    Language,
     PlantingStatus,
     ProductStatus,
     RepeatRule,
@@ -407,3 +408,53 @@ def test_one_farmer_cannot_touch_another_farmers_task(client, db, farmer_context
     response = client.post(f"{API}/tasks/{task.id}/done", headers=user_headers(other))
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "task.not_found"
+
+
+def test_notification_is_delivered_with_rendered_text(db, client, farmer_context):
+    """The app renders the admin editable template, not a hardcoded key."""
+    user, _product, planting = farmer_context
+    settings_service.seed_defaults(db)
+    add_task(db, planting, due_at=due_soon())
+
+    reminders.run_once(db, get_settings())
+
+    response = client.get(f"{API}/notifications", headers=user_headers(user))
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["title_translation_key"] == "task.reminder.morning.title"
+    # The seeded farmer prefers Kinyarwanda.
+    assert item["title"] == "Umurimo w'igitondo"
+    assert item["body"] is not None
+    assert "Check the bags." in item["body"]
+
+
+def test_resolved_text_follows_the_farmer_language(db, client, farmer_context):
+    user, _product, planting = farmer_context
+    user.language = Language.EN
+    db.commit()
+    settings_service.seed_defaults(db)
+    add_task(db, planting, due_at=due_soon())
+    reminders.run_once(db, get_settings())
+
+    response = client.get(f"{API}/notifications", headers=user_headers(user))
+    item = response.json()["items"][0]
+    assert item["title"] == "Morning task"
+    assert "Good morning" in item["body"]
+
+
+def test_edited_template_text_reaches_the_app(db, client, farmer_context):
+    from app.sms import templates
+
+    user, _product, planting = farmer_context
+    user.language = Language.EN
+    db.commit()
+    settings_service.seed_defaults(db)
+    add_task(db, planting, due_at=due_soon())
+    reminders.run_once(db, get_settings())
+
+    template = templates.get_template(db, "task.reminder.morning", "en")
+    template.body = "Edited copy for {product}."
+    db.commit()
+
+    response = client.get(f"{API}/notifications", headers=user_headers(user))
+    assert response.json()["items"][0]["body"] == f"Edited copy for {_product.name_en}."
