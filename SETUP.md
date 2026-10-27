@@ -11,11 +11,11 @@ pipeline, aggregations, AI suggestions, WebSocket events, products and reminders
 ## Requirements
 
 - Python 3.11 or newer
-- PostgreSQL 15 or newer (Replit provides one, the connection string arrives as `DATABASE_URL`)
+- PostgreSQL 15 or newer 
 
 ## Environment variables and Secrets
 
-Copy `.env.example` to `.env` for local work. On Replit set the same names under Secrets.
+Copy `.env.example` to `.env` for local work. 
 
 **Use `cp -n`, or open the file and edit it. A bare `cp .env.example .env` overwrites
 the `DATABASE_URL`, `JWT_SECRET` and `ADMIN_BOOTSTRAP_PASSWORD` you already had, and

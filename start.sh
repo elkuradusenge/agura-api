@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Replit run command for the API. Start the worker from the run configuration as well.
+# Run this script to start up the application
 set -euo pipefail
 
 alembic upgrade head

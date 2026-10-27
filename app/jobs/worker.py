@@ -1,7 +1,5 @@
 """Standalone job worker.
 
-Run as its own Replit process so heavy uploads never share a process with the API:
-
     python -m app.jobs.worker
 
 The API can also run jobs in a thread pool during development. Both paths take a
@@ -41,12 +39,14 @@ def claim_next_job_id() -> object | None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="AGUra survey job worker")
-    parser.add_argument("--once", action="store_true", help="Run at most one job then exit")
+    parser.add_argument("--once", action="store_true",
+                        help="Run at most one job then exit")
     args = parser.parse_args(argv)
 
     settings = get_settings()
     logging.basicConfig(level=settings.log_level.upper())
-    logger.info("Worker started, polling every %s seconds", settings.worker_poll_seconds)
+    logger.info("Worker started, polling every %s seconds",
+                settings.worker_poll_seconds)
 
     while True:
         job_id = claim_next_job_id()

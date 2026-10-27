@@ -1,7 +1,5 @@
 """Standalone scheduler process.
 
-Runs in its own Replit process so reminder delivery never blocks a request:
-
     python -m app.scheduler.runner
 
 The pass runs every minute. A PostgreSQL advisory lock keeps a second instance from
