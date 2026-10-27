@@ -97,3 +97,30 @@ def test_suspended_farmer_keeps_no_access(client, user_factory, db):
     response = client.get(f"{API}/me", headers=user_headers(user))
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "auth.forbidden"
+
+
+def test_admin_me_returns_permissions_for_a_reload(client, admin_factory):
+    admin = admin_factory(role=AdminRole.CONTENT_EDITOR)
+    response = client.get(f"{API}/auth/admin/me", headers=admin_headers(admin))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == str(admin.id)
+    assert body["role"] == "content_editor"
+    assert "products.write" in body["permissions"]
+    assert "users.write" not in body["permissions"]
+
+
+def test_admin_me_rejects_a_suspended_admin(client, admin_factory, db):
+    admin = admin_factory(role=AdminRole.SUPER_ADMIN)
+    admin.status = AdminStatus.SUSPENDED
+    db.commit()
+
+    response = client.get(f"{API}/auth/admin/me", headers=admin_headers(admin))
+    assert response.status_code == 403
+
+
+def test_admin_me_rejects_a_farmer_token(client, user_factory):
+    user = user_factory()
+    response = client.get(f"{API}/auth/admin/me", headers=user_headers(user))
+    assert response.status_code == 401

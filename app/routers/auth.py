@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, Response, status
 
 from app.config import get_settings
-from app.core.deps import DbSession, client_ip, user_agent
+from app.core.deps import CurrentAdmin, DbSession, client_ip, user_agent
 from app.core.permissions import permissions_for
 from app.core.rate_limit import check_rate_limit
 from app.schemas.admin import AdminWithPermissions
@@ -129,3 +129,17 @@ def confirm_password_reset(
     check_rate_limit("auth.password_reset_confirm", client_ip(request))
     auth_service.confirm_password_reset(db, payload.phone, payload.code, payload.new_password)
     return MessageResponse(message="password_reset_done")
+
+
+@router.get(
+    "/admin/me",
+    response_model=AdminWithPermissions,
+    summary="Read the signed in administrator with their permissions",
+)
+def read_admin(admin: CurrentAdmin) -> AdminWithPermissions:
+    """Lets the console restore permissions after a page reload.
+
+    The login response is the only other place permissions are sent, and it is
+    not kept across reloads, so navigation would otherwise lose its gating.
+    """
+    return _admin_payload(admin)
