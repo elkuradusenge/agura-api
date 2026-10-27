@@ -1,6 +1,7 @@
 """HTTP routers."""
 
 from app.routers import (
+    admin_ai,
     admin_analysis,
     admin_audit,
     admin_surveys,
@@ -11,6 +12,7 @@ from app.routers import (
 )
 
 __all__ = [
+    "admin_ai",
     "admin_analysis",
     "admin_audit",
     "admin_surveys",

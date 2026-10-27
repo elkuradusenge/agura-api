@@ -12,6 +12,7 @@ os.environ.setdefault("SMS_ENABLED", "false")
 os.environ.setdefault("RUN_JOBS_INLINE", "true")
 os.environ.setdefault("ANALYSIS_CHUNK_SIZE", "500")
 os.environ.setdefault("UPLOAD_DIR", ".test-uploads")
+os.environ.setdefault("WS_AUTH_TIMEOUT_SECONDS", "1")
 
 import uuid  # noqa: E402
 from collections.abc import Iterator  # noqa: E402
@@ -34,6 +35,12 @@ from app.models.user import User  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLES = (
+    "ws_events",
+    "ws_event_cursors",
+    "ai_ranking_items",
+    "province_clusters",
+    "ai_ranking_runs",
+    "nutrition_reference",
     "province_food_summary",
     "mushroom_summary",
     "household_diversity_summary",

@@ -111,6 +111,8 @@ class AggregationResult:
     diversity_rows: int = 0
     readiness_rows: int = 0
     foods_scored: int = 0
+    mushroom_households_national: int | None = None
+    mushroom_share_national: float | None = None
     warnings: list[str] = field(default_factory=list)
 
     def as_summary(self) -> dict[str, Any]:
@@ -120,6 +122,8 @@ class AggregationResult:
             "diversity_cells": self.diversity_rows,
             "readiness_cells": self.readiness_rows,
             "food_items_aggregated": self.foods_scored,
+            "mushroom_households_national": self.mushroom_households_national,
+            "mushroom_share_national": self.mushroom_share_national,
             "warnings": self.warnings,
         }
 
@@ -718,6 +722,25 @@ def run_aggregation(db: Session, survey: Survey) -> AggregationResult:
     result.mushroom_rows = aggregate_mushroom(db, survey)
     result.diversity_rows = aggregate_diversity(db, survey)
     result.readiness_rows, unresolved = aggregate_readiness(db, survey)
+
+    national = db.execute(
+        text(
+            """
+            SELECT mushroom_households, weighted_mushroom_households,
+                   weighted_households_total
+            FROM mushroom_summary
+            WHERE survey_id = :survey_id AND level = 'national'
+            """
+        ),
+        {"survey_id": str(survey.id)},
+    ).one_or_none()
+    if national is not None:
+        result.mushroom_households_national = int(national.mushroom_households)
+        total = float(national.weighted_households_total or 0)
+        if total:
+            result.mushroom_share_national = round(
+                float(national.weighted_mushroom_households or 0) / total, 4
+            )
 
     if result.mushroom_rows == 0:
         result.warnings.append("Mushroom is not mapped for this survey")

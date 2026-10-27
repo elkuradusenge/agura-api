@@ -22,7 +22,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDPrimaryKeyMixin, value_enum
-from app.models.enums import FoodGroup
+from app.models.enums import FeasibilityLevel, FoodGroup
 
 
 class Household(Base, UUIDPrimaryKeyMixin):
@@ -72,6 +72,25 @@ class FoodItem(Base, UUIDPrimaryKeyMixin):
     source_variable: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     count_variable: Mapped[str | None] = mapped_column(String(64))
     nutrition_group: Mapped[str | None] = mapped_column(String(60))
+    budget_fit: Mapped[FeasibilityLevel] = mapped_column(
+        value_enum(FeasibilityLevel, "feasibility_budget_fit", 16),
+        nullable=False,
+        default=FeasibilityLevel.UNKNOWN,
+        server_default=FeasibilityLevel.UNKNOWN.value,
+    )
+    land_need: Mapped[FeasibilityLevel] = mapped_column(
+        value_enum(FeasibilityLevel, "feasibility_land_need", 16),
+        nullable=False,
+        default=FeasibilityLevel.UNKNOWN,
+        server_default=FeasibilityLevel.UNKNOWN.value,
+    )
+    season_fit: Mapped[FeasibilityLevel] = mapped_column(
+        value_enum(FeasibilityLevel, "feasibility_season_fit", 16),
+        nullable=False,
+        default=FeasibilityLevel.UNKNOWN,
+        server_default=FeasibilityLevel.UNKNOWN.value,
+    )
+    market_note: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

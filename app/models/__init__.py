@@ -14,6 +14,7 @@ from app.models.enums import (
     ActorType,
     AdminRole,
     AdminStatus,
+    FeasibilityLevel,
     FoodGroup,
     GeoLevel,
     JobEventType,
@@ -21,13 +22,21 @@ from app.models.enums import (
     JobStatus,
     Language,
     PlatformGroup,
+    RankingStatus,
     SubjectType,
     SurveyStatus,
     UserStatus,
+    WsChannel,
 )
 from app.models.household import FoodItem, Household
 from app.models.password_reset_code import PasswordResetCode
 from app.models.person import Person
+from app.models.ranking import (
+    AiRankingItem,
+    AiRankingRun,
+    NutritionReference,
+    ProvinceCluster,
+)
 from app.models.refresh_token import RefreshToken
 from app.models.survey import (
     FieldMapping,
@@ -39,15 +48,19 @@ from app.models.survey import (
     VariableDictionary,
 )
 from app.models.user import User
+from app.models.ws_event import WsEvent, WsEventCursor
 
 __all__ = [
     "ActorType",
     "Admin",
+    "AiRankingItem",
+    "AiRankingRun",
     "AdminRole",
     "AdminStatus",
     "AppSetting",
     "AuditLog",
     "Base",
+    "FeasibilityLevel",
     "FieldMapping",
     "FoodGroup",
     "FoodItem",
@@ -60,10 +73,13 @@ __all__ = [
     "JobStatus",
     "Language",
     "MushroomSummary",
+    "NutritionReference",
     "PasswordResetCode",
     "Person",
     "PlatformGroup",
+    "ProvinceCluster",
     "ProvinceFoodSummary",
+    "RankingStatus",
     "ReadinessSummary",
     "RefreshToken",
     "SubjectType",
@@ -75,4 +91,7 @@ __all__ = [
     "UserStatus",
     "ValueLabel",
     "VariableDictionary",
+    "WsChannel",
+    "WsEvent",
+    "WsEventCursor",
 ]

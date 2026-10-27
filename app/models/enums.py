@@ -107,6 +107,25 @@ class FoodGroup(StrEnum):
     FUNGI = "fungi"
 
 
+class RankingStatus(StrEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class FeasibilityLevel(StrEnum):
+    UNKNOWN = "unknown"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class WsChannel(StrEnum):
+    ADMIN = "admin"
+    USER = "user"
+
+
 class GeoLevel(StrEnum):
     NATIONAL = "national"
     PROVINCE = "province"
@@ -131,3 +150,11 @@ class JobEventType(StrEnum):
     JOB_STAGE_COMPLETED = "job.stage_completed"
     JOB_COMPLETED = "job.completed"
     JOB_FAILED = "job.failed"
+    RANKING_COMPLETED = "ranking.completed"
+    NOTIFICATION_CREATED = "notification.created"
+    TASK_DUE = "task.due"
+    PRODUCT_PUBLISHED = "product.published"
+    PRODUCT_UPDATED = "product.updated"
+    ANALYSIS_UPDATED = "analysis.updated"
+    SPECIALIST_REQUEST_UPDATED = "specialist_request.updated"
+    FUNDING_INTEREST_UPDATED = "funding_interest.updated"

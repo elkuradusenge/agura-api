@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -15,6 +16,7 @@ from app.config import get_settings
 from app.core.errors import register_error_handlers
 from app.db import get_session_factory
 from app.routers import (
+    admin_ai,
     admin_analysis,
     admin_audit,
     admin_surveys,
@@ -24,6 +26,8 @@ from app.routers import (
     me,
 )
 from app.services.auth_service import ensure_bootstrap_admin
+from app.ws.broadcaster import bind_loop as broadcaster_bind
+from app.ws.router import router as ws_router
 
 logger = logging.getLogger("agura.app")
 
@@ -39,6 +43,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.warning("Skipping administrator bootstrap, database not ready: %s", exc)
     finally:
         session.close()
+    broadcaster_bind(asyncio.get_running_loop())
     logger.info("AGUra API %s starting in %s", __version__, settings.environment)
     yield
     logger.info("AGUra API stopping")
@@ -74,7 +79,10 @@ def create_app() -> FastAPI:
         admin_audit.router,
         admin_surveys.router,
         admin_analysis.router,
+        admin_ai.router,
     )
+    app.include_router(ws_router)
+
     for router in routers:
         app.include_router(router, prefix=settings.api_prefix)
 

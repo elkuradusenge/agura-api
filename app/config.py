@@ -70,6 +70,7 @@ class Settings(BaseSettings):
     job_workers: int = 1
     run_jobs_inline: bool = False
     worker_poll_seconds: float = 2.0
+    ws_auth_timeout_seconds: float = 15.0
 
     survey_key_variables: str = "ml01,ml02,hhid,hh_weight"
     dta_encoding: str | None = None

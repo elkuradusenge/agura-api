@@ -16,7 +16,7 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.analysis import aggregation, cleaning, loading, mapping
+from app.analysis import aggregation, cleaning, loading, mapping, ranking
 from app.analysis.dictionary import (
     DictionaryEntry,
     code_for_keywords,
@@ -26,8 +26,9 @@ from app.analysis.dictionary import (
 from app.analysis.ingest import upload_directory, validate_upload
 from app.config import Settings, get_settings
 from app.db import get_session_factory
-from app.models.enums import JobEventType, JobStage, JobStatus, SurveyStatus
+from app.models.enums import JobEventType, JobStage, JobStatus, SurveyStatus, WsChannel
 from app.models.survey import JobEvent, Survey, SurveyJob, UploadQualityReport
+from app.ws import broadcaster
 
 logger = logging.getLogger("agura.analysis.pipeline")
 
@@ -38,6 +39,7 @@ STAGES: tuple[JobStage, ...] = (
     JobStage.CLEANED,
     JobStage.LOADED,
     JobStage.AGGREGATED,
+    JobStage.SCORED,
 )
 
 STAGE_WEIGHT: dict[JobStage, int] = {
@@ -46,7 +48,8 @@ STAGE_WEIGHT: dict[JobStage, int] = {
     JobStage.MAPPED: 10,
     JobStage.CLEANED: 45,
     JobStage.LOADED: 15,
-    JobStage.AGGREGATED: 10,
+    JobStage.AGGREGATED: 8,
+    JobStage.SCORED: 2,
 }
 
 ADVISORY_LOCK_NAMESPACE = 4_812_003
@@ -89,16 +92,30 @@ def emit(
     stage: JobStage | None = None,
     payload: dict[str, Any] | None = None,
 ) -> None:
+    """Store the job event and push it to administrators in the same call."""
+    body = payload or {}
     db.add(
         JobEvent(
             job_id=job.id,
             survey_id=job.survey_id,
             type=event_type.value,
             stage=(stage or job.stage).value if (stage or job.stage) else None,
-            payload=payload or {},
+            payload=body,
         )
     )
     db.commit()
+    broadcaster.publish(
+        db,
+        channel=WsChannel.ADMIN,
+        event_type=event_type.value,
+        payload={
+            "job_id": str(job.id),
+            "survey_id": str(job.survey_id),
+            "stage": (stage or job.stage).value if (stage or job.stage) else None,
+            "progress_percent": job.progress_percent,
+            **body,
+        },
+    )
 
 
 def staging_usable(db: Session, job: SurveyJob) -> bool:
@@ -421,6 +438,9 @@ def _execute(db: Session, job: SurveyJob, settings: Settings) -> None:
             job.summary = {**job.summary, "aggregated": summary}
             db.commit()
 
+        elif stage is JobStage.SCORED:
+            summary = _stage_scored(db, job, survey)
+
         job.progress_percent = _base_percent(stage) + STAGE_WEIGHT[stage]
         db.commit()
         emit(
@@ -436,17 +456,81 @@ def _execute(db: Session, job: SurveyJob, settings: Settings) -> None:
     job.progress_percent = 100
     job.finished_at = _now()
     db.commit()
+    completed_payload = _completed_payload(job.summary)
     emit(
         db,
         job,
         JobEventType.JOB_COMPLETED,
-        stage=JobStage.LOADED,
-        payload=job.summary.get("loaded", {}),
+        stage=JobStage.SCORED,
+        payload=completed_payload,
     )
+    broadcaster.notify_all_users(
+        db,
+        JobEventType.ANALYSIS_UPDATED.value,
+        {
+            "survey_id": str(survey.id),
+            "survey_name": survey.name,
+            "survey_year": survey.year,
+        },
+    )
+
+
+def _stage_scored(db: Session, job: SurveyJob, survey: Survey) -> dict[str, Any]:
+    """Run the suggestion engine and keep the top under-farmed foods for the summary."""
+    try:
+        result = ranking.run_ranking(db, survey, created_by_id=job.survey.uploaded_by_id)
+    except Exception as exc:  # noqa: BLE001 - a ranking failure must not lose the loaded data
+        logger.warning("Ranking failed for survey %s: %s", survey.id, exc)
+        ranking.clear_runs(db, survey.id)
+        return {
+            "status": "failed",
+            "message": f"{type(exc).__name__}: {exc}"[:300],
+            "top_under_farmed": [],
+        }
+
+    emit(
+        db,
+        job,
+        JobEventType.RANKING_COMPLETED,
+        stage=JobStage.SCORED,
+        payload={
+            "run_id": str(result.run_id),
+            "score_basis": result.score_basis,
+            "cluster_count": result.cluster_count,
+        },
+    )
+    return {
+        "status": "completed",
+        "run_id": str(result.run_id),
+        "score_basis": result.score_basis,
+        "cluster_count": result.cluster_count,
+        "silhouette": result.silhouette,
+        "items": result.items_written,
+        "warnings": result.warnings,
+        "top_under_farmed": result.top_under_farmed,
+    }
 
 
 def _stage_summary_for_event(stage: JobStage, summary: dict[str, Any]) -> dict[str, Any]:
     return summary.get(stage.value, {})
+
+
+def _completed_payload(summary: dict[str, Any]) -> dict[str, Any]:
+    """The key results an administrator sees the moment the job finishes."""
+    loaded = summary.get("loaded", {})
+    aggregated = summary.get("aggregated", {})
+    scored = summary.get("scored", {})
+    return {
+        "households_loaded": loaded.get("households_loaded"),
+        "duplicates_removed": (
+            (loaded.get("exact_duplicate_rows") or 0) + (loaded.get("duplicate_persons") or 0)
+        ),
+        "mushroom_households_national": aggregated.get("mushroom_households_national"),
+        "mushroom_share_national": aggregated.get("mushroom_share_national"),
+        "top_under_farmed_foods": scored.get("top_under_farmed", [])[:5],
+        "quality_warnings": loaded.get("warnings", []),
+        "score_basis": scored.get("score_basis"),
+    }
 
 
 def run_job(job_id: uuid.UUID, settings: Settings | None = None) -> None:
