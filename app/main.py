@@ -19,9 +19,12 @@ from app.routers import (
     admin_ai,
     admin_analysis,
     admin_audit,
+    admin_products,
+    admin_support,
     admin_surveys,
     admin_users,
     auth,
+    farmer,
     health,
     me,
 )
@@ -80,6 +83,9 @@ def create_app() -> FastAPI:
         admin_surveys.router,
         admin_analysis.router,
         admin_ai.router,
+        admin_products.router,
+        admin_support.router,
+        farmer.router,
     )
     app.include_router(ws_router)
 

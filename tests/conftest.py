@@ -35,6 +35,19 @@ from app.models.user import User  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLES = (
+    "sms_log",
+    "notifications",
+    "harvests",
+    "task_instances",
+    "plantings",
+    "funding_interest",
+    "specialist_requests",
+    "product_versions",
+    "product_schedule_tasks",
+    "product_nutrients",
+    "product_benefits",
+    "products",
+    "message_templates",
     "ws_events",
     "ws_event_cursors",
     "ai_ranking_items",

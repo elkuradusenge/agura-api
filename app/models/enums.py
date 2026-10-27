@@ -121,6 +121,114 @@ class FeasibilityLevel(StrEnum):
     HIGH = "high"
 
 
+class ProductStatus(StrEnum):
+    DRAFT = "draft"
+    TRACKABLE = "trackable"
+    PAUSED = "paused"
+    RETIRED = "retired"
+
+
+class AgeGroup(StrEnum):
+    KIDS_1_5 = "kids_1_5"
+    CHILDREN_6_12 = "children_6_12"
+    YOUNG_13_24 = "young_13_24"
+    ADULTS = "adults"
+    OLDER_60_PLUS = "older_60_plus"
+
+
+AGE_GROUPS: tuple[AgeGroup, ...] = (
+    AgeGroup.KIDS_1_5,
+    AgeGroup.CHILDREN_6_12,
+    AgeGroup.YOUNG_13_24,
+    AgeGroup.ADULTS,
+    AgeGroup.OLDER_60_PLUS,
+)
+
+
+class TaskType(StrEnum):
+    IRRIGATION = "irrigation"
+    SPRAY_OR_TREATMENT = "spray_or_treatment"
+    CHECK = "check"
+    HARVEST = "harvest"
+    OTHER = "other"
+
+
+class RepeatRule(StrEnum):
+    ONCE = "once"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    CUSTOM = "custom"
+
+
+class TimeOfDay(StrEnum):
+    MORNING = "morning"
+    EVENING = "evening"
+
+
+class IrrigationFrequency(StrEnum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    CUSTOM = "custom"
+
+
+class PlantingStatus(StrEnum):
+    ACTIVE = "active"
+    PAUSED = "paused"
+    FINISHED = "finished"
+
+
+class TaskInstanceStatus(StrEnum):
+    PENDING = "pending"
+    DONE = "done"
+    SNOOZED = "snoozed"
+    SKIPPED = "skipped"
+    MISSED = "missed"
+
+
+class NotificationType(StrEnum):
+    TASK_REMINDER = "task_reminder"
+    TASK_MISSED = "task_missed"
+    PRODUCT_PUBLISHED = "product_published"
+    ANALYSIS_UPDATED = "analysis_updated"
+    SPECIALIST_REQUEST = "specialist_request"
+    FUNDING_INTEREST = "funding_interest"
+    SYSTEM = "system"
+
+
+class SmsStatus(StrEnum):
+    QUEUED = "queued"
+    SENT = "sent"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+    DISABLED = "disabled"
+
+
+class HarvestUse(StrEnum):
+    EATEN = "eaten"
+    SOLD = "sold"
+    PRESERVED = "preserved"
+
+
+class SpecialistType(StrEnum):
+    AGRONOMIST = "agronomist"
+    EXPERIENCED_FARMER = "experienced_farmer"
+    TRAINING_VISIT = "training_visit"
+
+
+class SpecialistRequestStatus(StrEnum):
+    NEW = "new"
+    ASSIGNED = "assigned"
+    CONTACTED = "contacted"
+    CLOSED = "closed"
+
+
+class FundingStatus(StrEnum):
+    NEW = "new"
+    REVIEWING = "reviewing"
+    REFERRED_TO_BRD = "referred_to_brd"
+    CLOSED = "closed"
+
+
 class WsChannel(StrEnum):
     ADMIN = "admin"
     USER = "user"

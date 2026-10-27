@@ -129,3 +129,9 @@ def small_cell_threshold(db: Session) -> int:
     if isinstance(value, int) and value > 0:
         return value
     return get_settings().small_cell_threshold
+
+
+def all_settings(db: Session) -> list[dict[str, Any]]:
+    """Every setting with its description, for the settings screen."""
+    rows = db.scalars(select(AppSetting).order_by(AppSetting.key)).all()
+    return [{"key": row.key, "value": row.value, "description": row.description} for row in rows]
