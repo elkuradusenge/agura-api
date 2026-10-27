@@ -17,9 +17,26 @@ pipeline, aggregations, AI suggestions, WebSocket events, products and reminders
 
 Copy `.env.example` to `.env` for local work. On Replit set the same names under Secrets.
 
+**Use `cp -n`, or open the file and edit it. A bare `cp .env.example .env` overwrites
+the `DATABASE_URL`, `JWT_SECRET` and `ADMIN_BOOTSTRAP_PASSWORD` you already had, and
+the next command then fails against a database that does not exist.**
+
+The port and database name in `DATABASE_URL` are properties of your cluster, not
+constants. Confirm them before running anything:
+
+```bash
+pg_isready -h 127.0.0.1 -p 5432   # is anything listening, and on which port
+psql -h 127.0.0.1 -p 5432 -U postgres -l   # list the databases that really exist
+```
+
+If your cluster listens on a non default port, every connection string and every
+`createdb` needs `-p`. This project was developed against an isolated cluster on
+**port 5433** holding `agura_dev` and `agura_test`, because the system cluster on
+5432 required a password that was not available.
+
 | Name | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. The plain form works as Replit gives it, for example `postgresql://user:password@localhost`. Both `postgres://` and `postgresql://` are rewritten to the psycopg driver automatically. |
+| `DATABASE_URL` | yes | PostgreSQL connection string. Both `postgres://` and `postgresql://` are rewritten to the psycopg driver automatically. The port and database name must exist on your cluster, see above. |
 | `JWT_SECRET` | yes | Signs access tokens. Use a long random value in production. |
 | `ADMIN_BOOTSTRAP_PASSWORD` | first run | Creates the first super administrator (`ADMIN_BOOTSTRAP_EMAIL`) when no administrator exists. |
 | `ALLOWED_ORIGINS` | yes | Comma separated list of frontend origins for CORS. |
@@ -40,7 +57,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-cp .env.example .env          # then edit DATABASE_URL and JWT_SECRET
+cp -n .env.example .env       # -n: never overwrite a .env that already works
 alembic upgrade head          # create the schema
 python -m scripts.seed        # application settings and the first administrator
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -55,8 +72,8 @@ The suite runs against a real PostgreSQL database, not SQLite, because the model
 UUID and JSONB columns. Point `TEST_DATABASE_URL` at a scratch database.
 
 ```bash
-createdb agura_test
-export TEST_DATABASE_URL=postgresql+psycopg://user:password@127.0.0.1:5432/agura_test
+createdb -h 127.0.0.1 -p 5433 agura_test
+export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:5433/agura_test
 # The suite rewrites the public schema, so never point it at real data.
 pytest
 
