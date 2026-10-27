@@ -44,7 +44,7 @@ If your cluster listens on a non default port, every connection string and every
 | `SMS_API_KEY`, `SMS_USERNAME`, `SMS_SENDER_ID` | production | Africa's Talking credentials. |
 | `SMALL_CELL_THRESHOLD` | no | Aggregate cells built from fewer households are suppressed. Default 10. |
 | `PHONE_VERIFICATION_ENABLED` | no | Feature flag for SMS phone verification, off in development. |
-| `PORT` | Replit | Port the API binds to. |
+| `PORT` | Port the API binds to. |
 | `TEST_DATABASE_URL` | tests | Separate database used by the test suite. |
 
 Never commit `.env`, secrets or any `.dta` file. `.gitignore` already covers `*.dta`,
@@ -254,17 +254,6 @@ product rather than pretending to be finished.
 `GET /auth/admin/me` returns the signed in administrator with their permission list.
 The console needs it after a page reload, because permissions otherwise only arrive
 once, on the login response, and permission gated navigation would disappear.
-
-## Replit notes
-
-- Bind to `0.0.0.0` and read the port from `PORT`.
-- Use a deployment type that keeps one instance running (Reserved VM or equivalent).
-  WebSocket connections and background jobs do not survive scale to zero.
-- When M2 and M6 land, the API, the job worker and the scheduler run as separate
-  processes. The `Procfile` in this repository lists them; start them from the Replit
-  run configuration.
-- Uploaded census files are streamed to a private folder and never served back. No API
-  response returns an individual household or person record.
 
 ## Layout
 
