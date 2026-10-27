@@ -100,14 +100,16 @@ def province_context(db, user, product: Product) -> ProvinceContext | None:
     threshold = settings_service.small_cell_threshold(db)
 
     if product.food_item_id is None:
+        # Nothing is withheld here: this crop simply has no census row, which is
+        # a different thing and must not be shown as suppression.
         return ProvinceContext(
             available=False,
             province=user.province,
             source_name=source_name,
             source_year=source_year,
             survey_name=survey.name,
-            suppressed=True,
-            translation_key="analysis.fewer_than_threshold",
+            suppressed=False,
+            translation_key="analysis.not_available",
         )
 
     row = db.execute(

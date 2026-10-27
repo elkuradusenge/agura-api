@@ -449,3 +449,39 @@ def test_partners_are_published(client, user_factory):
     assert response.status_code == 200
     codes = {partner["code"] for partner in response.json()["partners"]}
     assert codes == {"RAB", "BRD"}
+
+
+def test_product_without_a_census_row_says_unavailable_not_suppressed(
+    client, admin_factory, user_factory, db, seeded_food_items
+):
+    """A crop the census never asked about is not the same as a withheld cell."""
+    from app.models.survey import Survey
+
+    admin = admin_factory(role=AdminRole.SUPER_ADMIN)
+    payload = dict(COMPLETE_PRODUCT)
+    payload.pop("food_item_id", None)
+    product_id = create_product(client, admin, payload).json()["id"]
+    client.post(f"{API}/admin/products/{product_id}/mark-trackable", headers=admin_headers(admin))
+
+    survey = Survey(
+        name="Context census",
+        year=2022,
+        original_filename="c.dta",
+        stored_path="c/c.dta",
+        file_size_bytes=1,
+        checksum_sha256="f" * 64,
+        status="ready",
+    )
+    db.add(survey)
+    db.commit()
+    store_questionnaire(db, survey.id)
+
+    farmer = user_factory(phone="+250788600010")
+    farmer.province = "Kigali City"
+    db.commit()
+
+    body = client.get(f"{API}/products/{product_id}", headers=user_headers(farmer)).json()
+    context = body["province_context"]
+    assert context["available"] is False
+    assert context["suppressed"] is False
+    assert context["translation_key"] == "analysis.not_available"
