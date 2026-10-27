@@ -34,6 +34,10 @@ from app.models.user import User  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLES = (
+    "province_food_summary",
+    "mushroom_summary",
+    "household_diversity_summary",
+    "readiness_summary",
     "job_events",
     "survey_jobs",
     "upload_quality_report",
@@ -193,3 +197,54 @@ def confirm_mapping(client, headers, job_id, updates=None):
         headers=headers,
         json={"updates": updates or []},
     )
+
+
+QUESTIONNAIRE_LABELS = {
+    "h05": ("Roof material", ["Iron sheets", "Tiles", "Thatch"]),
+    "h06": ("Wall material", ["Bricks", "Mud", "Concrete"]),
+    "h12": ("Main drinking water source", ["Piped water", "Protected spring", "Lake"]),
+    "h14": ("Grid electricity connection", ["Yes", "No"]),
+    "p30a": ("Highest level of education", ["None", "Primary", "Secondary"]),
+    "p35": ("Access to internet", ["Yes", "No"]),
+    "p36c": ("Type of mobile phone", ["Smartphone", "Feature phone", "No phone"]),
+}
+
+
+def store_questionnaire(db, survey_id) -> None:
+    """Store the labels the readiness definitions resolve against."""
+    from app.analysis.dictionary import DictionaryEntry, LabelValue, store_dictionary
+
+    entries = []
+    for position, (variable, (label, values)) in enumerate(QUESTIONNAIRE_LABELS.items()):
+        entries.append(
+            DictionaryEntry(
+                variable_name=variable,
+                label=label,
+                section="household" if variable.startswith("h") else "person",
+                dtype=None,
+                position=position,
+                value_labels=tuple(
+                    LabelValue(str(index), text) for index, text in enumerate(values, start=1)
+                ),
+            )
+        )
+    store_dictionary(db, survey_id, entries)
+    db.commit()
+
+
+@pytest.fixture
+def questionnaire(db):
+    """Callable that stores the questionnaire labels for a survey."""
+
+    def _store(survey):
+        store_questionnaire(db, survey.id)
+
+    return _store
+
+
+@pytest.fixture
+def seeded_food_items(db):
+    from app.services.reference_service import seed_food_items
+
+    seed_food_items(db)
+    return True

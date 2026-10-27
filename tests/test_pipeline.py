@@ -95,7 +95,7 @@ def test_upload_pauses_at_mapping_then_resumes_to_completion(client, admin_facto
     )
     assert confirmed.status_code == 200
     assert confirmed.json()["status"] == "completed"
-    assert confirmed.json()["stage"] == "loaded"
+    assert confirmed.json()["stage"] == "aggregated"
     assert confirmed.json()["progress_percent"] == 100
 
     survey = client.get(f"{API}/admin/surveys/{survey_id}", headers=headers).json()
@@ -120,7 +120,14 @@ def test_upload_pauses_at_mapping_then_resumes_to_completion(client, admin_facto
     events = client.get(f"{API}/admin/jobs/{job_id}", headers=headers).json()["events"]
     assert events[-1]["type"] == "job.completed"
     stage_completed = [event["stage"] for event in events if event["type"] == "job.stage_completed"]
-    assert stage_completed == ["received", "validated", "mapped", "cleaned", "loaded"]
+    assert stage_completed == [
+        "received",
+        "validated",
+        "mapped",
+        "cleaned",
+        "loaded",
+        "aggregated",
+    ]
 
 
 def test_loaded_rows_match_the_quality_report(client, admin_factory, synthetic_dta, db):

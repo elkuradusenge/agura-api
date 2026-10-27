@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -48,6 +49,10 @@ class Household(Base, UUIDPrimaryKeyMixin):
     pop_weight: Mapped[float | None] = mapped_column(Numeric(18, 4))
     household_size: Mapped[int | None] = mapped_column(Integer)
     food_diversity_count: Mapped[int | None] = mapped_column(Integer)
+    female_headed: Mapped[bool | None] = mapped_column(Boolean)
+    head_education_code: Mapped[str | None] = mapped_column(String(20))
+    head_phone_type_code: Mapped[str | None] = mapped_column(String(20))
+    head_internet_code: Mapped[str | None] = mapped_column(String(20))
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"
     )

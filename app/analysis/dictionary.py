@@ -233,3 +233,28 @@ def load_dictionary(db: Session, survey_id: uuid.UUID) -> dict[str, DictionaryEn
 
 def platform_groups(entries: list[DictionaryEntry]) -> dict[str, str]:
     return {entry.variable_name: platform_group_for(entry.variable_name).value for entry in entries}
+
+
+def code_for_keywords(entry: DictionaryEntry | None, keywords: set[str]) -> str | None:
+    """Find the value label that means the same as one of the keywords.
+
+    Nothing is assumed about the numeric code: it always comes from the file labels.
+    """
+    if entry is None:
+        return None
+    for item in entry.value_labels:
+        normalised = " ".join(item.label.strip().lower().split())
+        if normalised in keywords or any(word in normalised for word in keywords):
+            return item.value
+    return None
+
+
+def codes_for_keywords(entry: DictionaryEntry | None, keywords: set[str]) -> list[str]:
+    if entry is None:
+        return []
+    found: list[str] = []
+    for item in entry.value_labels:
+        normalised = " ".join(item.label.strip().lower().split())
+        if any(word in normalised for word in keywords):
+            found.append(item.value)
+    return found

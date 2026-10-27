@@ -107,6 +107,21 @@ class FoodGroup(StrEnum):
     FUNGI = "fungi"
 
 
+class GeoLevel(StrEnum):
+    NATIONAL = "national"
+    PROVINCE = "province"
+    DISTRICT = "district"
+    SECTOR = "sector"
+
+
+GEO_LEVELS: tuple[GeoLevel, ...] = (
+    GeoLevel.NATIONAL,
+    GeoLevel.PROVINCE,
+    GeoLevel.DISTRICT,
+    GeoLevel.SECTOR,
+)
+
+
 class JobEventType(StrEnum):
     UPLOAD_RECEIVED = "upload.received"
     JOB_STARTED = "job.started"

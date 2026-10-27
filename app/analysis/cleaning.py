@@ -213,6 +213,16 @@ def _scalar(value: Any) -> Any:
     return value
 
 
+def _code_text(value: Any) -> str | None:
+    """Codes are written to text columns, so 2.0 must become "2" and not "2.0"."""
+    scalar = _scalar(value)
+    if scalar is None:
+        return None
+    if isinstance(scalar, float) and scalar.is_integer():
+        return str(int(scalar))
+    return str(scalar).strip()
+
+
 def _attribute_scalar(value: Any) -> Any:
     """Census codes are whole numbers.
 
@@ -295,8 +305,8 @@ def build_rows(frame: pd.DataFrame) -> tuple[list[tuple], list[tuple]]:
             person_rows.append(
                 (
                     str(hhid).strip(),
-                    str(p01).strip(),
-                    _scalar(record.get("p03")),
+                    _code_text(p01),
+                    _code_text(record.get("p03")),
                     _scalar(record.get("p04")),
                     payload,
                 )

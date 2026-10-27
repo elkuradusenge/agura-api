@@ -165,3 +165,18 @@ def test_whole_number_codes_are_stored_as_json_integers():
     household_rows, _ = build_rows(cleaned)
     assert json.loads(household_rows[0][-1]) == {"h25_21": 1}
     assert json.loads(household_rows[1][-1]) == {"h25_21": 2}
+
+
+def test_person_ids_and_sex_codes_are_written_as_clean_text():
+    """p01 and p03 land in text columns, so 2.0 must become "2"."""
+    import json
+
+    dictionary = make_dictionary()
+    frame = pd.DataFrame({"hhid": ["1"], "p01": [1.0], "p03": [2.0], "p04": [30.0]})
+    from app.analysis.cleaning import build_rows
+
+    cleaned, _ = normalise_chunk(frame, dictionary)
+    _, person_rows = build_rows(cleaned)
+    hhid, p01, sex, age, payload = person_rows[0]
+    assert (hhid, p01, sex, age) == ("1", "1", "2", 30)
+    assert json.loads(payload) == {}

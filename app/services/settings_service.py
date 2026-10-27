@@ -37,14 +37,50 @@ DEFAULT_SETTINGS: dict[str, tuple[Any, str]] = {
     ),
     "readiness.weights": (
         {
-            "walls_and_roof": 0.2,
+            "shelter": 0.2,
             "water": 0.15,
             "electricity": 0.15,
-            "phone_and_internet": 0.15,
-            "education_of_head": 0.2,
-            "household_size": 0.15,
+            "phone": 0.1,
+            "internet": 0.1,
+            "education": 0.2,
+            "household_size": 0.1,
         },
         "Transparent weights for the 0 to 100 readiness index.",
+    ),
+    "readiness.definitions": (
+        {
+            "shelter": {
+                "variable": "h06",
+                "label_keywords": ["brick", "concrete", "cement", "block", "stone", "burnt"],
+                "roof_variable": "h05",
+                "roof_label_keywords": ["iron", "tile", "concrete", "sheet", "metal"],
+            },
+            "water": {
+                "variable": "h12",
+                "label_keywords": ["piped", "protected", "tap", "borehole"],
+            },
+            "electricity": {"variable": "h14", "label_keywords": ["yes"]},
+            "phone": {
+                "variable": "p36c",
+                "label_keywords": ["smart", "feature"],
+            },
+            "internet": {
+                "variable": "p35",
+                "label_keywords": ["yes", "daily", "weekly", "monthly", "occasionally"],
+            },
+            "education": {
+                "variable": "p30a",
+                "label_keywords": [
+                    "secondary",
+                    "university",
+                    "higher",
+                    "tvet",
+                    "vocational",
+                    "tertiary",
+                ],
+            },
+        },
+        "How each readiness component is detected, taken from the value labels.",
     ),
 }
 

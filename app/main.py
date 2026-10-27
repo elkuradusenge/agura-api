@@ -14,7 +14,15 @@ from app import __version__
 from app.config import get_settings
 from app.core.errors import register_error_handlers
 from app.db import get_session_factory
-from app.routers import admin_audit, admin_surveys, admin_users, auth, health, me
+from app.routers import (
+    admin_analysis,
+    admin_audit,
+    admin_surveys,
+    admin_users,
+    auth,
+    health,
+    me,
+)
 from app.services.auth_service import ensure_bootstrap_admin
 
 logger = logging.getLogger("agura.app")
@@ -65,6 +73,7 @@ def create_app() -> FastAPI:
         admin_users.router,
         admin_audit.router,
         admin_surveys.router,
+        admin_analysis.router,
     )
     for router in routers:
         app.include_router(router, prefix=settings.api_prefix)

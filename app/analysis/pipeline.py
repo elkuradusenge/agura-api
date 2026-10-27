@@ -16,8 +16,13 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from app.analysis import cleaning, loading, mapping
-from app.analysis.dictionary import DictionaryEntry, load_dictionary, store_dictionary
+from app.analysis import aggregation, cleaning, loading, mapping
+from app.analysis.dictionary import (
+    DictionaryEntry,
+    code_for_keywords,
+    load_dictionary,
+    store_dictionary,
+)
 from app.analysis.ingest import upload_directory, validate_upload
 from app.config import Settings, get_settings
 from app.db import get_session_factory
@@ -32,14 +37,16 @@ STAGES: tuple[JobStage, ...] = (
     JobStage.MAPPED,
     JobStage.CLEANED,
     JobStage.LOADED,
+    JobStage.AGGREGATED,
 )
 
 STAGE_WEIGHT: dict[JobStage, int] = {
     JobStage.RECEIVED: 5,
-    JobStage.VALIDATED: 20,
-    JobStage.MAPPED: 15,
-    JobStage.CLEANED: 55,
-    JobStage.LOADED: 5,
+    JobStage.VALIDATED: 15,
+    JobStage.MAPPED: 10,
+    JobStage.CLEANED: 45,
+    JobStage.LOADED: 15,
+    JobStage.AGGREGATED: 10,
 }
 
 ADVISORY_LOCK_NAMESPACE = 4_812_003
@@ -216,10 +223,25 @@ def _stage_cleaned(
     )
 
 
+HEAD_KEYWORDS = {"head", "household head", "umukuru w urugo", "chief"}
+FEMALE_KEYWORDS = {"female", "umugore", "femme"}
+
+
 def _stage_loaded(
     db: Session, job: SurveyJob, survey: Survey, staged: cleaning.StagedCleaning
 ) -> dict[str, Any]:
     result = cleaning.run_loading(db, survey.id, staged)
+
+    dictionary = load_dictionary(db, survey.id)
+    head_code = code_for_keywords(dictionary.get("p02"), HEAD_KEYWORDS)
+    female_code = code_for_keywords(dictionary.get("p03"), FEMALE_KEYWORDS)
+    heads = loading.update_household_heads(
+        db,
+        survey.id,
+        head_code=head_code,
+        female_code=female_code,
+    )
+    db.commit()
 
     report = db.scalar(
         select(UploadQualityReport).where(UploadQualityReport.survey_id == survey.id)
@@ -251,6 +273,7 @@ def _stage_loaded(
         "household_rows_read": result.household_rows_read,
         "households_loaded": result.households_loaded,
         "persons_loaded": result.persons_loaded,
+        "households_with_head_identified": heads,
         "warnings": result.warnings,
     }
 
@@ -391,6 +414,12 @@ def _execute(db: Session, job: SurveyJob, settings: Settings) -> None:
                 )
             summary = _stage_loaded(db, job, survey, staged)
             job.summary = {**job.summary, "loaded": summary}
+
+        elif stage is JobStage.AGGREGATED:
+            aggregation_result = aggregation.run_aggregation(db, survey)
+            summary = aggregation_result.as_summary()
+            job.summary = {**job.summary, "aggregated": summary}
+            db.commit()
 
         job.progress_percent = _base_percent(stage) + STAGE_WEIGHT[stage]
         db.commit()

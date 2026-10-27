@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -263,3 +264,57 @@ def update_household_sizes(db: Session, survey_id: uuid.UUID) -> None:
         ),
         {"survey_id": str(survey_id)},
     )
+
+
+HEAD_VARIABLES = ("p02", "p03", "p30a", "p34", "p35", "p36c")
+
+
+def update_household_heads(
+    db: Session,
+    survey_id: uuid.UUID,
+    *,
+    head_code: str | None,
+    female_code: str | None,
+    education_variable: str = "p30a",
+    phone_variable: str = "p36c",
+    internet_variable: str = "p35",
+) -> int:
+    """Copy the household head's attributes onto the household row.
+
+    Every code is resolved from the file value labels by the caller, so nothing is
+    assumed about the numbering. When the female code is unknown the column is left
+    as NULL rather than guessed.
+    """
+    if head_code is None:
+        return 0
+
+    female_clause = (
+        "female_headed = (p.sex = :female_code)" if female_code else "female_headed = NULL"
+    )
+    parameters: dict[str, Any] = {
+        "survey_id": str(survey_id),
+        "head_code": head_code,
+        "education_variable": education_variable,
+        "phone_variable": phone_variable,
+        "internet_variable": internet_variable,
+    }
+    if female_code:
+        parameters["female_code"] = female_code
+
+    result = db.execute(
+        text(
+            f"""
+            UPDATE households h
+            SET {female_clause},
+                head_education_code = p.attributes ->> :education_variable,
+                head_phone_type_code = p.attributes ->> :phone_variable,
+                head_internet_code = p.attributes ->> :internet_variable
+            FROM persons p
+            WHERE p.survey_id = :survey_id
+              AND p.household_id = h.id
+              AND p.attributes ->> 'p02' = :head_code
+            """
+        ),
+        parameters,
+    )
+    return result.rowcount or 0

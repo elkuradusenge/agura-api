@@ -106,6 +106,57 @@ python -m app.jobs.worker
 Set `RUN_JOBS_INLINE=true` to run jobs in the API process instead, which is what the
 test suite does.
 
+## M3 aggregation and mushroom analysis
+
+When the job reaches `aggregated` it computes four summary tables from SQL, in one
+scan of `households` per table:
+
+- `province_food_summary`: per food item, per geography (national, province, district,
+  sector), the households growing or rearing it, the weighted share, the unweighted
+  share, the average number of heads or trees where the questionnaire has a count
+  variable, and for livestock the district-of-rearing distribution.
+- `mushroom_summary`: mushroom households with weighted and unweighted shares, the
+  urban and rural split, the female headed share, average household size, and the
+  share that already keeps a grain, fruit or livestock activity.
+- `household_diversity_summary`: distinct field crops, vegetables and fruits per
+  household, stored on `households.food_diversity_count`, then averaged per geography
+  with the full distribution.
+- `readiness_summary`: a 0 to 100 score per geography from weighted component shares
+  and the documented weights in `readiness.weights`.
+
+Household head attributes (sex, education, phone type, internet access) are copied
+onto the household row during the `loaded` stage, so every aggregate stays a single
+table scan. The head person is found from the `p02` value label, never assumed.
+
+### Small cell suppression
+
+Raw counts and weighted sums are stored unchanged. Suppression happens when a
+response is built, using `privacy.small_cell_threshold` from `app_settings`, so
+changing the threshold takes effect immediately without re-running a job. A withheld
+value comes back as:
+
+```json
+{"value": null, "count": null, "suppressed": true,
+ "translation_key": "analysis.fewer_than_threshold", "threshold": 10}
+```
+
+### Analysis endpoints
+
+- `GET /admin/food-items` with `q` and `group` filters, `PATCH /admin/food-items/{id}`
+- `GET /admin/analysis/province-food-summary` with `survey_id`, `level`, `province`, `district`, `food_item_id`
+- `GET /admin/analysis/mushroom`, `/diversity`, `/readiness` with the same filters
+- Every response carries `meta` with the survey name and year, the source name and
+  year, the threshold and whether the figures are weighted
+
+### Readiness definitions
+
+`readiness.definitions` in `app_settings` says how each component is detected. Codes
+come from the value labels in the uploaded file. Some files ship person variables
+without value labels, in which case a component is skipped and the job summary warns
+about it. An administrator can then add an explicit `codes` list to that definition,
+and the response reports `definition_source` as `configured_codes` so the assumption
+stays visible.
+
 ## What M1 provides
 
 - `POST /api/v1/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout`,
