@@ -9,6 +9,9 @@ os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("JWT_SECRET", "test-secret-used-only-by-the-test-suite")
 os.environ.setdefault("ADMIN_BOOTSTRAP_PASSWORD", "BootstrapPass123!")
 os.environ.setdefault("SMS_ENABLED", "false")
+os.environ.setdefault("RUN_JOBS_INLINE", "true")
+os.environ.setdefault("ANALYSIS_CHUNK_SIZE", "500")
+os.environ.setdefault("UPLOAD_DIR", ".test-uploads")
 
 import uuid  # noqa: E402
 from collections.abc import Iterator  # noqa: E402
@@ -31,11 +34,21 @@ from app.models.user import User  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TABLES = (
+    "job_events",
+    "survey_jobs",
+    "upload_quality_report",
+    "persons",
+    "households",
+    "field_mappings",
+    "value_labels",
+    "variable_dictionary",
+    "surveys",
     "audit_log",
     "refresh_tokens",
     "password_reset_codes",
     "users",
     "admins",
+    "food_items",
     "app_settings",
 )
 
@@ -146,3 +159,37 @@ def user_headers(user: User) -> dict[str, str]:
 
 
 API = "/api/v1"
+
+
+@pytest.fixture(scope="session")
+def synthetic_dta(tmp_path_factory) -> str:
+    from scripts.make_synthetic_dta import write_synthetic_dta
+
+    directory = tmp_path_factory.mktemp("dta")
+    path = write_synthetic_dta(directory / "synthetic_census.dta", person_rows=600)
+    return str(path)
+
+
+@pytest.fixture
+def survey_admin(admin_factory):
+    from app.models.enums import AdminRole
+
+    return admin_factory(role=AdminRole.DATA_ANALYST)
+
+
+def upload_survey(client, headers, path, *, name="Census 2022", year=2022, keep_file=False):
+    with open(path, "rb") as handle:
+        return client.post(
+            f"{API}/admin/surveys/upload",
+            headers=headers,
+            files={"file": ("census.dta", handle, "application/octet-stream")},
+            data={"name": name, "year": str(year), "keep_file": str(keep_file).lower()},
+        )
+
+
+def confirm_mapping(client, headers, job_id, updates=None):
+    return client.post(
+        f"{API}/admin/jobs/{job_id}/mapping",
+        headers=headers,
+        json={"updates": updates or []},
+    )

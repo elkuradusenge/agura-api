@@ -19,7 +19,7 @@ Copy `.env.example` to `.env` for local work. On Replit set the same names under
 
 | Name | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. `postgres://` and `postgresql://` are rewritten to the psycopg driver automatically. |
+| `DATABASE_URL` | yes | PostgreSQL connection string. The plain form works as Replit gives it, for example `postgresql://user:password@localhost`. Both `postgres://` and `postgresql://` are rewritten to the psycopg driver automatically. |
 | `JWT_SECRET` | yes | Signs access tokens. Use a long random value in production. |
 | `ADMIN_BOOTSTRAP_PASSWORD` | first run | Creates the first super administrator (`ADMIN_BOOTSTRAP_EMAIL`) when no administrator exists. |
 | `ALLOWED_ORIGINS` | yes | Comma separated list of frontend origins for CORS. |
@@ -67,6 +67,44 @@ python scripts/check_no_em_dash.py
 
 `pytest` includes `tests/test_no_em_dash.py`, which fails the build when the em dash
 character appears anywhere in the source tree, as required by the product rules.
+
+## M2 data pipeline
+
+`POST /api/v1/admin/surveys/upload` streams the `.dta` file to a private folder,
+returns `202` with a job id, and runs the pipeline outside the request. Stages run in
+order and every stage writes a `job_events` row, so nothing is lost:
+
+1. `received`: the file is re-hashed and compared with the upload checksum.
+2. `validated`: the file opens and every key variable is present. The whole
+   questionnaire goes into `variable_dictionary` and `value_labels`.
+3. `mapped`: field groups and the yes code for each flag come from the value labels.
+   The job pauses with `awaiting_mapping` until an administrator confirms.
+4. `cleaned`: chunked reading, trimming, declared missing codes to NULL, geography
+   names standardised, impossible ages rejected, exact duplicates dropped.
+5. `loaded`: `COPY` into unlogged staging tables, then SQL deduplication and one
+   ordered insert per table. Secondary indexes are rebuilt once afterwards.
+
+Stata files that are not UTF-8 are detected automatically: `cp1252` and `latin-1` are
+tried in turn, and `DTA_ENCODING` pins one when you know it.
+
+Other endpoints: `GET /admin/surveys`, `GET /admin/surveys/{id}`, `GET /admin/jobs/{id}`,
+`GET|POST /admin/jobs/{id}/mapping`, `GET /admin/surveys/{id}/dictionary`,
+`GET /admin/surveys/{id}/quality-report`, `DELETE /admin/surveys/{id}` (rolls back every
+row and deletes the file).
+
+Generate a test file with `python -m scripts.make_synthetic_dta --out /tmp/census.dta`.
+It is person level with repeated household variables, variable labels and value labels,
+plus injected duplicates, impossible ages and untidy geography names. It contains no
+real data.
+
+Run the worker as its own process so uploads never share a process with the API:
+
+```bash
+python -m app.jobs.worker
+```
+
+Set `RUN_JOBS_INLINE=true` to run jobs in the API process instead, which is what the
+test suite does.
 
 ## What M1 provides
 

@@ -11,6 +11,7 @@ import sys
 from app.config import get_settings
 from app.db import get_session_factory
 from app.services.auth_service import ensure_bootstrap_admin
+from app.services.reference_service import seed_food_items
 from app.services.settings_service import seed_defaults
 
 
@@ -27,11 +28,13 @@ def main(argv: list[str] | None = None) -> int:
     session = get_session_factory()()
     try:
         created_settings = seed_defaults(session, overwrite=args.reset_settings)
+        created_food_items = seed_food_items(session, overwrite=args.reset_settings)
         admin = ensure_bootstrap_admin(session)
     finally:
         session.close()
 
     print(f"Application settings written: {created_settings}")
+    print(f"Food items written: {created_food_items}")
     if admin is not None:
         print(f"Super administrator created: {admin.email}")
     elif settings.admin_bootstrap_password:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Replit run command. Milestone 2 adds the worker, milestone 6 adds the scheduler.
+# Replit run command for the API. Start the worker from the run configuration as well.
 set -euo pipefail
 
 alembic upgrade head

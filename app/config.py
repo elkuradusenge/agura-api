@@ -60,6 +60,21 @@ class Settings(BaseSettings):
     password_min_length: int = 8
     password_reset_code_minutes: int = 15
 
+    upload_dir: str = "uploads"
+    max_upload_bytes: int = 2 * 1024 * 1024 * 1024
+    min_free_disk_bytes: int = 2 * 1024 * 1024 * 1024
+    keep_uploaded_files: bool = False
+
+    analysis_chunk_size: int = 25_000
+    load_batch_size: int = 5_000
+    job_workers: int = 1
+    run_jobs_inline: bool = False
+    worker_poll_seconds: float = 2.0
+
+    survey_key_variables: str = "ml01,ml02,hhid,hh_weight"
+    dta_encoding: str | None = None
+    resident_retention_days: int = 365
+
     timezone: str = "Africa/Kigali"
 
     @field_validator("database_url", "test_database_url")
@@ -80,6 +95,10 @@ class Settings(BaseSettings):
     @property
     def is_test(self) -> bool:
         return self.environment.lower() == "test"
+
+    @property
+    def required_survey_variables(self) -> list[str]:
+        return [name.strip() for name in self.survey_key_variables.split(",") if name.strip()]
 
     def sqlalchemy_url(self, *, use_test_database: bool = False) -> str:
         if use_test_database and self.test_database_url:

@@ -38,3 +38,81 @@ class ActorType(StrEnum):
     USER = "user"
     ADMIN = "admin"
     SYSTEM = "system"
+
+
+class SurveyStatus(StrEnum):
+    UPLOADED = "uploaded"
+    PROCESSING = "processing"
+    AWAITING_MAPPING = "awaiting_mapping"
+    READY = "ready"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    DELETED = "deleted"
+
+
+class JobStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    AWAITING_MAPPING = "awaiting_mapping"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class JobStage(StrEnum):
+    RECEIVED = "received"
+    VALIDATED = "validated"
+    MAPPED = "mapped"
+    CLEANED = "cleaned"
+    LOADED = "loaded"
+    AGGREGATED = "aggregated"
+    SCORED = "scored"
+    COMPLETED = "completed"
+
+
+STAGE_ORDER: tuple[JobStage, ...] = (
+    JobStage.RECEIVED,
+    JobStage.VALIDATED,
+    JobStage.MAPPED,
+    JobStage.CLEANED,
+    JobStage.LOADED,
+    JobStage.AGGREGATED,
+    JobStage.SCORED,
+    JobStage.COMPLETED,
+)
+
+
+class PlatformGroup(StrEnum):
+    GEOGRAPHY = "geography"
+    PERSON_DEMOGRAPHICS = "person_demographics"
+    EDUCATION_DIGITAL = "education_digital"
+    EMPLOYMENT = "employment"
+    HOUSING_SERVICES = "housing_services"
+    ASSETS = "assets"
+    LIVESTOCK = "livestock"
+    FIELD_CROPS = "field_crops"
+    VEGETABLES = "vegetables"
+    FRUITS = "fruits"
+    TEA_COFFEE = "tea_coffee"
+    WEIGHTS = "weights"
+    PERSON_IDENTIFIERS = "person_identifiers"
+    UNKNOWN = "unknown"
+
+
+class FoodGroup(StrEnum):
+    FIELD_CROP = "field_crop"
+    VEGETABLE = "vegetable"
+    FRUIT = "fruit"
+    LIVESTOCK = "livestock"
+    FUNGI = "fungi"
+
+
+class JobEventType(StrEnum):
+    UPLOAD_RECEIVED = "upload.received"
+    JOB_STARTED = "job.started"
+    JOB_STAGE_STARTED = "job.stage_started"
+    JOB_STAGE_PROGRESS = "job.stage_progress"
+    JOB_MAPPING_REQUIRED = "job.mapping_required"
+    JOB_STAGE_COMPLETED = "job.stage_completed"
+    JOB_COMPLETED = "job.completed"
+    JOB_FAILED = "job.failed"
