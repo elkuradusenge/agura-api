@@ -1,0 +1,10 @@
+run = "bash start.sh"
+entrypoint = "app/main.py"
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+ENVIRONMENT = "development"
+SMS_ENABLED = "false"
