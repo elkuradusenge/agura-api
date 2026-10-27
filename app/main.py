@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import __version__
-from app.config import get_settings
+from app.config import InvalidEnvironment, get_settings
 from app.core.errors import register_error_handlers
 from app.db import get_session_factory
 from app.routers import (
@@ -53,6 +53,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    # First statement on purpose: a missing DATABASE_URL, JWT_SECRET or
+    # ALLOWED_ORIGINS must stop the process here, not fail later on a request.
     settings = get_settings()
     app = FastAPI(
         title=settings.app_name,
@@ -104,4 +106,8 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+try:
+    app = create_app()
+except InvalidEnvironment as exc:
+    # A readable report and a non zero exit, instead of an import traceback.
+    raise SystemExit(str(exc)) from None

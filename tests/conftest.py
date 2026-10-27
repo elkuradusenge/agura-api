@@ -7,6 +7,7 @@ import os
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://postgres@127.0.0.1:5433/agura_test")
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("JWT_SECRET", "test-secret-used-only-by-the-test-suite")
+os.environ.setdefault("ALLOWED_ORIGINS", "http://localhost:5173")
 os.environ.setdefault("ADMIN_BOOTSTRAP_PASSWORD", "BootstrapPass123!")
 os.environ.setdefault("SMS_ENABLED", "false")
 os.environ.setdefault("RUN_JOBS_INLINE", "true")

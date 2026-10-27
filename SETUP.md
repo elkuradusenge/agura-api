@@ -50,6 +50,37 @@ If your cluster listens on a non default port, every connection string and every
 Never commit `.env`, secrets or any `.dta` file. `.gitignore` already covers `*.dta`,
 `uploads/` and `.env`.
 
+### Validation happens at startup
+
+`DATABASE_URL`, `JWT_SECRET` and `ALLOWED_ORIGINS` have **no defaults**. If any is
+missing or malformed the process stops immediately and prints every problem at
+once, the way envalid does it in Node:
+
+```
+Environment validation failed
+==============================
+  ALLOWED_ORIGINS  required, but it is not set
+  DATABASE_URL     required, but it is not set
+  JWT_SECRET       required, but it is not set
+==============================
+Set these in .env or in the process environment, then start again.
+```
+
+There is no silent fallback, so the API cannot come up pointed at a database that
+does not exist. `JWT_SECRET` must be at least 32 characters and must not be a
+placeholder from a template. `DATABASE_URL` must be a PostgreSQL URL, and
+`ENVIRONMENT`, `LOG_LEVEL` and `SMS_PROVIDER` accept only their known values.
+
+Check the environment without starting anything:
+
+```bash
+python -m app.config
+```
+
+Everything else (`ACCESS_TOKEN_MINUTES`, `SMALL_CELL_THRESHOLD`, `ANALYSIS_CHUNK_SIZE`
+and the rest) keeps a documented operational default, because a wrong value there
+is a tuning choice rather than a connection to the wrong place.
+
 ## Local run
 
 ```bash
